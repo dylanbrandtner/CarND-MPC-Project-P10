@@ -5,16 +5,16 @@
 
 using CppAD::AD;
 
-// Set the timestep length and duration
+// Dylan: Set the timestep length and duration
 size_t N = 10;
 double dt = 0.1;
 
 // Dylan: Add tuning params
-double reference_dist_penalty = 250;
-double reference_orientation_penalty =250;
+double reference_dist_penalty = 500;
+double reference_orientation_penalty =500;
 double reference_speed_penalty = 2;
-double steering_penalty = 3000;
-double throttle_penalty = 100;
+double steering_penalty = 5000;
+double throttle_penalty = 10;
 double steering_change_penalty = 5000;
 double throttle_change_penalty = 1;
 
@@ -46,7 +46,7 @@ size_t epsi_start = cte_start + N;
 size_t delta_start = epsi_start + N;
 size_t a_start = delta_start + N - 1;
 
-double latency = .1; // account for latency
+double latency = .1; // Dylan: account for latency
 
 
 class FG_eval {
@@ -116,18 +116,18 @@ class FG_eval {
       AD<double> cte0 = vars[cte_start + t - 1];
       AD<double> epsi0 = vars[epsi_start + t - 1];
 
-      // Initial actuations at time t
-      AD<double> delta0 = vars[delta_start + t - 1];
-      AD<double> a0 = vars[a_start + t - 1];
-      
       // Dylan: Account for latency.  Use prior actuations
       unsigned int steps_back = latency / dt;
-      if (t > steps_back)
-      {        
-        a0 = vars[a_start + t - 1 - steps_back];
-        delta0 = vars[delta_start + t - 1 - steps_back];
-      }
+      if (t <= steps_back)
+      { 
+        steps_back = 0;  // Can't go further back than initial step
+      }      
       
+      // Dylan: Actuations at time t (- latency)
+      AD<double> delta0 = vars[delta_start + t - 1- steps_back];
+      AD<double> a0 = vars[a_start + t - 1 - steps_back];
+      
+
       //AD<double> f0 = coeffs[0] + coeffs[1] * x0;
       //AD<double> psides0 = CppAD::atan(coeffs[1]);
 
@@ -272,10 +272,10 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   ok &= solution.status == CppAD::ipopt::solve_result<Dvector>::success;
 
   // Cost
-  auto cost = solution.obj_value;
-  std::cout << "Cost " << cost << std::endl;
+  //auto cost = solution.obj_value;
+  //std::cout << "Cost " << cost << std::endl;
 
-  // Dylan: Update to return expected format of data
+  // Dylan: Update to return the data the caller actually uses
   vector<double> result = {solution.x[delta_start],solution.x[a_start]};
   for (unsigned int i = 0; i < N-1; i++) {
     result.push_back(solution.x[x_start + i + 1]);

@@ -77,7 +77,7 @@ int main() {
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
     string sdata = string(data).substr(0, length);
-    cout << sdata << endl;
+    //cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -92,6 +92,8 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
+          // Dylan: Updates for preprocessing and fitting
+          // ------------ Dylan updates start --------------------
           Eigen::VectorXd xvals(ptsx.size());
           Eigen::VectorXd yvals(ptsx.size());
 
@@ -157,13 +159,14 @@ int main() {
             next_y_vals.push_back(polyeval(coeffs, i));
           }
           
-
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
+          
+          // ------------ Dylan updates end --------------------
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
