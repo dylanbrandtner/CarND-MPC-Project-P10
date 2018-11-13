@@ -98,6 +98,7 @@ int main() {
           Eigen::VectorXd yvals(ptsx.size());
 
           // transform to car's perspective
+          // slack channel used as resource: https://carnd.slack.com/messages/C54DV4BK6/convo/C54DV4BK6-1522679678.000068/
           for (unsigned int i = 0; i < ptsx.size(); i++) {
             double diffx = ptsx[i] - px;
             double diffy = ptsy[i] - py;
