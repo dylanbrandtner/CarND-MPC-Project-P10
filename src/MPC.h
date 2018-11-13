@@ -8,6 +8,12 @@ using namespace std;
 
 class MPC {
  public:
+ 
+ // Storage for x/y vals for MPC algo
+ vector<double> x_vals;
+ vector<double> y_vals;
+ 
+ 
   MPC();
 
   virtual ~MPC();

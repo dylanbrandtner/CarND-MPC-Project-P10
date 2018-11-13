@@ -117,13 +117,13 @@ class FG_eval {
       AD<double> epsi0 = vars[epsi_start + t - 1];
 
       // Dylan: Account for latency.  Use prior actuations
+      // Adapted from suggestion at https://carnd.slack.com/messages/C54DV4BK6/convo/C54DV4BK6-1520754320.000033/)
       unsigned int steps_back = latency / dt;
       if (t <= steps_back)
       { 
         steps_back = 0;  // Can't go further back than initial step
       }      
       
-      // Dylan: Actuations at time t (- latency)
       AD<double> delta0 = vars[delta_start + t - 1- steps_back];
       AD<double> a0 = vars[a_start + t - 1 - steps_back];
       
@@ -275,12 +275,14 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   //auto cost = solution.obj_value;
   //std::cout << "Cost " << cost << std::endl;
 
-  // Dylan: Update to return the data the caller actually uses
-  vector<double> result = {solution.x[delta_start],solution.x[a_start]};
+  // Dylan: Store x/y vars
+  x_vals.clear();
+  y_vals.clear();
   for (unsigned int i = 0; i < N-1; i++) {
-    result.push_back(solution.x[x_start + i + 1]);
-    result.push_back(solution.x[y_start + i + 1]);
+    x_vals.push_back(solution.x[x_start + i + 1]);
+    y_vals.push_back(solution.x[y_start + i + 1]);
   }
-
-  return result;
+  
+  // Dylan: Update to return the actuator data
+  return {solution.x[delta_start],solution.x[a_start]};
 }

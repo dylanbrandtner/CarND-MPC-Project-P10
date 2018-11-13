@@ -77,11 +77,11 @@ Polynomial fitting and MPC preprocessing can be seen in the `main()` function of
 
 #### Model Predictive Control with Latency
 
-A real car would have latency between the time an actuation command is sent and when it actually propagates through the system. As noted in the lesson materials, a realistic value for this is 100ms, so this is the value used. To account for this, when calculating the state information, I used an older set of actuation values.  Since 100ms is the same as my timestep, this results in using the actuation values from 1 step behind.  Additionally, I had to compensate for imperfect measurements by heavily penalizing over-steering in my cost calculation.  I'm not sure this was the best way to compensate for latency, but I experimented with other methods and had no success.  
+A real car would have latency between the time an actuation command is sent and when it actually propagates through the system. As noted in the lesson materials, a realistic value for this is 100ms, so this is the value used. To account for this, when calculating the state information, I used an older set of actuation values.  Since 100ms is the same as my timestep, this results in using the actuation values from 1 step behind.  This solution was adapted from one suggested by other students in the [slack channel for this project](https://carnd.slack.com/messages/C54DV4BK6/convo/C54DV4BK6-1520754320.000033/).
 
-Also, it should be noted that although the amount of latency applied was a constant 100ms, the use of a thread sleep to simulate this is non-deterministic.  A thread sleep will tell the OS to yield the CPU, and the thread will remain blocked for amount of time specified.  However, the thread will not necessarily be re-scheduled again immediately after the 100ms expires.  Various other factors (ex. scheduling algorithm, time slices, thread priorities, etc.) could increase this simulated latency. I noticed my model preformed very poorly if there were too many other processes using resources on my machine.
+Additionally, I had to compensate for imperfect measurements by heavily penalizing over-steering in my cost calculation.  I'm not sure this was the best way to compensate for latency, but I experimented with other methods and had no success. More on Latency is covered in the Discussion section below.
 
-More on Latency is covered in the Discussion section below.
+Also, it should be noted that although the amount of latency applied was a constant 100ms, the use of a thread sleep to simulate this is non-deterministic.  A thread sleep will tell the OS to yield the CPU, and the thread will remain blocked for amount of time specified.  However, the thread will not necessarily be re-scheduled again immediately after the 100ms expires.  Various other factors (ex. scheduling algorithm, time slices, thread priorities, etc.) could increase this simulated latency.  I noticed my model preformed very poorly if there were too many other processes using resources on my PC.
 
 ### Simulation
 
@@ -96,21 +96,18 @@ Again, note the above details about latency.  My model will not preform optimall
 I found this to be a very difficult project for several reasons.  Here are some of the concepts I struggled with along the way:
 
 ### Starter/example code
-In general, there was little guidance on how the model needed to be implemented besides the source code provided in the MPC quizes.  This source was highly specialized to the examples in some non-obvious ways. For example,
-
-## Initial transforms
-
-I had to go back to notes about transforming coordinates in the Particle filter lesson and update the equations 
-
+In general, there was little guidance on how the model needed to be implemented besides the source code provided in the MPC quizzes.  This source was highly specialized to the examples in some non-obvious ways. In particular, the sample code used 1st order polynomials, and it took some time to realize this issue in the `FG_eval` class.  I had to go back and check all the calculations, and at that point I realized `ψdes` was using a derivative, and the `psides0` var had the derivative of a 1st order polynomial. 
 
 ### Data formats
 
-Sequential data formats confusing
+The sequential data formats for passing information between functions was very confusing.  I'm guessing this was an artifact of the CppAD API, but it made the various indexing operations tedious and error prone.  It would have been much more logical to me to store things in multiple vectors than a single `fg` vector. 
 
-### Polynomial order
+### Initial transforms
 
-Had to update some equations to use 3rd order instead of 1st order.
+It took a while to figure out how to transform the initial data points into the car's perspective. I had to go back to notes about transforming coordinates in the Particle filter lesson and then form new equations from that idea (since those were to preform the opposite transformation). I again had to rely on the slack channel to check my final work when I got stuck.  I wish there had been a quick tutorial on this in the lessons to avoid this confusing bit of math.
 
 ### Latency
 
-Unclear best way to deal with this.  Non-deterministic.
+As noted above, the most complex part of this lesson was dealing with the latency.  The fact that it was non-deterministic, and impacted by CPU utilization made experimentation results very unreliable.  Processor usage had such an impact, that I initially was unable to record a clip of my passing course run.  I had to remove all debug output, and close everything else on my PC to get a clean recording.  
+
+To account for the latency, I tried following the general suggestion from the course materials (i.e. running a simulation from the current state for the duration of the latency), but I never got any good results with this.  I suspect this increased processor load and thus further impacted latency and thus variability (or perhaps I just made a mistake somewhere in the calculations?).  My final approach of using older actuator values was a bit simpler to code up and had almost no processor penalty, but it still seemed to cause my predicted path to over-steer in the short term, which lead to very uneven steering on straight roads.  I suspect this was because I could only use this approach _after_ my first step in the predicted path, which meant my first prediction point was still using the wrong actuator values.  I eventually had to compensate for this with heavy steering penalties, but wasn't particularly satisfied with the result.    
